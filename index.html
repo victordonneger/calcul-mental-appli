@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MindMath">
     
-    <title>MindMath - Midnight Edition</title>
+    <title>MindMath - Midnight Zero-Latency</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -25,6 +25,7 @@
             --cyan: #06B6D4;
             --cyan-dim: rgba(6, 182, 212, 0.15);
             --red: #EF4444;
+            --red-dim: rgba(239, 68, 68, 0.2);
         }
 
         /* =========================================
@@ -35,50 +36,48 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            user-select: none; /* Bloque la sélection textuelle native */
-            touch-action: manipulation; /* Optimise les taps rapides */
+            user-select: none; 
+            touch-action: manipulation; 
         }
 
         html, body {
             width: 100vw;
-            height: 100vh;
-            /* height: 100dvh est plus précis sur iOS 15+ pour ignorer l'interface Safari */
-            height: 100dvh; 
+            height: 100dvh; /* dvh s'adapte parfaitement à l'interface Safari dynamique */
             background-color: var(--bg-pure);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden; /* Zéro scroll garanti */
-            position: fixed; /* Bloque l'effet d'élastique iOS */
+            position: fixed; /* Bloque l'effet d'élastique natif d'iOS */
         }
 
         #app {
             width: 100%;
             height: 100%;
-            position: relative;
         }
 
-        /* Les écrans s'étendent sur tout le viewport */
+        /* Gestion Flexbox Stricte pour éviter les chevauchements */
         .screen {
-            position: absolute;
-            inset: 0;
-            display: flex;
+            display: none; /* Remplacement de position: absolute */
             flex-direction: column;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            width: 100%;
+            height: 100%;
         }
 
         .screen.active {
-            opacity: 1;
-            pointer-events: auto;
+            display: flex;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         /* =========================================
            ACCUEIL (HOME SCREEN)
            ========================================= */
         #home-screen {
-            /* On descend légèrement le contenu sous l'encoche */
-            padding-top: calc(env(safe-area-inset-top) + 10px);
+            padding-top: calc(env(safe-area-inset-top) + 15px);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
@@ -87,40 +86,42 @@
             font-size: 32px;
             font-weight: 800;
             letter-spacing: 1px;
-            color: var(--cyan);
-            margin-bottom: 10px;
+            color: var(--text-main);
+            margin-bottom: 15px;
             flex-shrink: 0;
         }
+        .header-title span { color: var(--cyan); }
 
-        /* Graphique limité à 30% max */
+        /* Graphique calibré à 25vh */
         .chart-wrapper {
-            flex: 0 1 30vh;
-            min-height: 120px;
-            margin: 0 20px 15px 20px;
+            height: 25vh;
+            min-height: 140px;
+            margin: 0 20px 20px 20px;
             background: var(--surface);
-            border-radius: 16px;
-            padding: 10px;
+            border-radius: 20px;
+            padding: 15px;
             border: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0;
         }
 
         /* Sélecteur de temps */
         .time-selector {
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 0 20px 15px 20px;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0 20px 20px 20px;
             flex-shrink: 0;
         }
 
         .time-btn {
             flex: 1;
             background: var(--surface);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 2px solid transparent;
             color: var(--text-dim);
-            padding: 12px 0;
-            border-radius: 12px;
+            padding: 14px 0;
+            border-radius: 14px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.2s;
         }
 
@@ -128,39 +129,43 @@
             background: var(--cyan-dim);
             color: var(--cyan);
             border-color: var(--cyan);
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 15px var(--cyan-dim);
         }
 
-        /* Grille des modes */
+        /* Grille des modes harmonisée (Carrés parfaits) */
         .mode-grid {
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-auto-rows: 1fr;
-            gap: 12px;
+            gap: 15px;
             padding: 0 20px 20px 20px;
+            align-content: center;
         }
 
         .mode-btn {
             background: var(--surface);
             border: none;
-            border-radius: 16px;
+            border-radius: 20px;
             color: var(--text-main);
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
+            aspect-ratio: 1 / 1; /* Carrés parfaits */
+            transition: transform 0.1s, background 0.1s;
         }
 
-        .mode-btn:active { background: var(--surface-hover); transform: scale(0.97); }
+        .mode-btn:active { background: var(--surface-hover); transform: scale(0.95); }
 
         .mode-btn.mixte {
             grid-column: span 2;
+            aspect-ratio: auto; /* Le bouton mixte s'adapte en hauteur */
+            height: 70px;
             background: var(--cyan);
             color: var(--bg-pure);
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
         }
         .mode-btn.mixte:active { opacity: 0.8; }
 
@@ -168,7 +173,7 @@
            ÉCRAN DE JEU (GAME SCREEN)
            ========================================= */
         #game-screen {
-            padding-top: calc(env(safe-area-inset-top) + 20px);
+            padding-top: calc(env(safe-area-inset-top) + 30px);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
@@ -183,30 +188,32 @@
             font-size: 22px;
             font-weight: 700;
             color: var(--text-dim);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
-        #ui-timer { color: var(--text-main); }
+        #ui-timer { color: var(--text-main); font-variant-numeric: tabular-nums; }
         
-        /* Jauge Dynamique */
+        /* Jauge Dynamique Fixée */
         .progress-track {
             width: 100%;
-            height: 6px;
+            height: 10px; /* Visibilité augmentée */
             background: var(--surface);
-            border-radius: 3px;
-            overflow: hidden;
+            border-radius: 5px;
+            overflow: visible; /* Permet à la lueur de dépasser */
         }
 
         #ui-progress {
             height: 100%;
             width: 100%;
             background: var(--cyan);
-            transition: width 1s linear, background-color 0.3s;
+            border-radius: 5px;
+            box-shadow: 0 0 12px var(--cyan); /* Effet Néon */
+            transition: width 1s linear, background-color 0.3s, box-shadow 0.3s;
         }
 
-        /* Focus : Équation centrale */
+        /* Focus : Centrage Mathématique Parfait */
         .focus-zone {
-            flex: 1;
+            flex: 1; /* Occupe tout l'espace disponible entre la jauge et le clavier */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -214,32 +221,35 @@
         }
 
         .equation {
-            font-size: 72px;
+            font-size: 76px;
             font-weight: 800;
-            line-height: 1.1;
+            line-height: 1;
+            letter-spacing: -2px;
         }
 
         .user-input {
-            font-size: 56px;
+            font-size: 60px;
             color: var(--cyan);
             font-weight: 700;
-            min-height: 70px; /* Évite le saut lors de la frappe */
-            margin-top: 10px;
+            min-height: 75px; 
+            margin-top: 15px;
+            text-shadow: 0 0 20px var(--cyan-dim);
         }
 
         /* Clavier ancré */
         .numpad {
-            padding: 10px 15px max(15px, env(safe-area-inset-bottom));
+            padding: 10px 15px max(15px, env(safe-area-inset-bottom)); /* Sécurité iOS */
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
             flex-shrink: 0;
+            background: var(--bg-pure);
         }
 
         .key {
             background: var(--surface);
             border: none;
-            border-radius: 14px;
+            border-radius: 16px;
             color: var(--text-main);
             font-size: 32px;
             font-weight: 500;
@@ -256,26 +266,27 @@
            ÉCRAN DE RÉSULTAT
            ========================================= */
         #result-screen {
-            padding-top: calc(env(safe-area-inset-top) + 20px);
+            padding-top: calc(env(safe-area-inset-top) + 30px);
             padding-bottom: env(safe-area-inset-bottom);
             align-items: center;
             justify-content: center;
         }
 
-        .result-title { font-size: 28px; color: var(--text-dim); margin-bottom: 30px; }
-        .score-huge { font-size: 90px; font-weight: 800; color: var(--cyan); line-height: 1; }
-        .score-sub { font-size: 18px; color: var(--text-dim); margin-top: 10px; margin-bottom: 50px; text-align: center;}
+        .result-title { font-size: 24px; color: var(--text-dim); margin-bottom: 20px; font-weight: 600;}
+        .score-huge { font-size: 100px; font-weight: 800; color: var(--cyan); line-height: 1; text-shadow: 0 0 30px var(--cyan-dim);}
+        .score-sub { font-size: 18px; color: var(--text-dim); margin-top: 15px; margin-bottom: 60px; text-align: center; line-height: 1.5;}
         
         .btn-home {
-            background: var(--surface);
-            border: 1px solid var(--cyan);
+            background: transparent;
+            border: 2px solid var(--cyan);
             color: var(--cyan);
-            padding: 18px 40px;
+            padding: 20px 0;
             border-radius: 20px;
             font-size: 18px;
             font-weight: 700;
-            width: 80%;
-            max-width: 300px;
+            width: 85%;
+            max-width: 320px;
+            transition: background 0.2s;
         }
         .btn-home:active { background: var(--cyan-dim); }
 
@@ -286,7 +297,7 @@
 <div id="app">
     
     <div id="home-screen" class="screen active">
-        <h1 class="header-title">MindMath</h1>
+        <h1 class="header-title">Mind<span>Math</span></h1>
         
         <div class="chart-wrapper">
             <canvas id="historyChart"></canvas>
@@ -303,7 +314,7 @@
             <button class="mode-btn" onclick="launchGame('Soustraction')">Soustraction</button>
             <button class="mode-btn" onclick="launchGame('Multiplication')">Multiplication</button>
             <button class="mode-btn" onclick="launchGame('Division')">Division</button>
-            <button class="mode-btn mixte" onclick="launchGame('Mixte')">Mixte Défi</button>
+            <button class="mode-btn mixte" onclick="launchGame('Mixte')">Défi Mixte</button>
         </div>
     </div>
 
@@ -340,17 +351,17 @@
     </div>
 
     <div id="result-screen" class="screen">
-        <h2 class="result-title">Temps écoulé !</h2>
+        <h2 class="result-title">Temps écoulé</h2>
         <div id="ui-final-score" class="score-huge">0</div>
         <div id="ui-final-stats" class="score-sub">Précision: 0%<br>Mode Mixte (60s)</div>
-        <button class="btn-home" onclick="returnHome()">Retour</button>
+        <button class="btn-home" onclick="returnHome()">Retour au menu</button>
     </div>
 
 </div>
 
 <script>
     /* =========================================
-       LOGIQUE STATE & SPA
+       LOGIQUE D'APPLICATION
        ========================================= */
     const UI = {
         screens: {
@@ -380,7 +391,7 @@
 
     let myChart = null;
 
-    /* --- Navigation & Setup --- */
+    /* --- Navigation --- */
     function showScreen(name) {
         Object.values(UI.screens).forEach(s => s.classList.remove('active'));
         UI.screens[name].classList.add('active');
@@ -393,8 +404,8 @@
     }
 
     function returnHome() {
-        renderChart();
         showScreen('home');
+        renderChart(); // On render le graph APRES l'affichage flex pour garantir ses dimensions
     }
 
     /* --- Moteur de Jeu --- */
@@ -405,8 +416,17 @@
         GAME.timeLeft = GAME.selectedDuration;
         GAME.currentInput = '';
         
+        // Réinitialisation stricte de la jauge UI
+        UI.progress.style.transition = 'none'; // Coupe l'animation pour le reset instantané
         UI.progress.style.width = '100%';
         UI.progress.style.backgroundColor = 'var(--cyan)';
+        UI.progress.style.boxShadow = '0 0 12px var(--cyan)';
+        
+        // Force le reflow pour appliquer le reset immédiatement
+        void UI.progress.offsetWidth; 
+        
+        // Réactive la transition pour le déroulement de la partie
+        UI.progress.style.transition = 'width 1s linear, background-color 0.3s, box-shadow 0.3s';
         
         refreshTopBar();
         generateMath();
@@ -428,13 +448,14 @@
         UI.timer.innerText = `${GAME.timeLeft}s`;
         UI.score.innerText = `Score: ${GAME.score}`;
         
-        // Calcul Jauge
+        // Calcul et mise à jour de la Jauge
         const percentage = (GAME.timeLeft / GAME.selectedDuration) * 100;
         UI.progress.style.width = `${percentage}%`;
         
-        // Virage au rouge sous 25%
+        // Virage au rouge sous 25% du temps restant
         if (percentage <= 25) {
             UI.progress.style.backgroundColor = 'var(--red)';
+            UI.progress.style.boxShadow = '0 0 12px var(--red)';
             UI.timer.style.color = 'var(--red)';
         } else {
             UI.timer.style.color = 'var(--text-main)';
@@ -513,16 +534,16 @@
     }
 
     function saveScore(score) {
-        let history = JSON.parse(localStorage.getItem('mindmath_scores')) || [];
+        let history = JSON.parse(localStorage.getItem('mindmath_scores_v2')) || [];
         if (history.length >= 20) history.shift();
         history.push(score);
-        localStorage.setItem('mindmath_scores', JSON.stringify(history));
+        localStorage.setItem('mindmath_scores_v2', JSON.stringify(history));
     }
 
     /* --- Graphique (Chart.js) --- */
     function renderChart() {
         const ctx = document.getElementById('historyChart').getContext('2d');
-        let data = JSON.parse(localStorage.getItem('mindmath_scores')) || [];
+        let data = JSON.parse(localStorage.getItem('mindmath_scores_v2')) || [];
         let labels = data.length ? data.map((_, i) => i + 1) : [''];
         let chartData = data.length ? data : [0];
 
@@ -535,11 +556,15 @@
                 datasets: [{
                     data: chartData,
                     borderColor: '#06B6D4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                    borderWidth: 3,
                     fill: true,
-                    tension: 0.3,
-                    pointRadius: 0
+                    tension: 0.4,
+                    pointBackgroundColor: '#111111',
+                    pointBorderColor: '#06B6D4',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
             options: {
@@ -552,16 +577,20 @@
                         display: true, 
                         border: { display: false },
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#A0A0A0', maxTicksLimit: 5, padding: 5 }
+                        ticks: { color: '#A0A0A0', maxTicksLimit: 5, padding: 10, font: {size: 11} },
+                        beginAtZero: true
                     }
                 },
-                layout: { padding: 5 }
+                layout: { padding: 0 }
             }
         });
     }
 
     // Initialisation
-    window.onload = renderChart;
+    window.onload = () => {
+        // Le padding env() ne marche qu'en Standalone (Home Screen), on force un chart initial
+        renderChart();
+    };
 
 </script>
 </body>
