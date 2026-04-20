@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MindMath">
+    
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzAwN0FGRiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEwMCIgZmlsbD0id2hpdGUiPiYjeDIyMTE7PC90ZXh0Pjwvc3ZnPg==">
+
+    <title>MindMath</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- VARIABLES & iOS DESIGN SYSTEM --- */
+        :root {
+            --bg-color: #F2F2F7;
+            --surface-color: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --apple-blue: #007AFF;
+            --apple-green: #34C759;
+            --apple-red: #FF3B30;
+            --separator: rgba(60, 60, 67, 0.29);
+            --numpad-bg: #E5E5EA;
+            --numpad-btn: #FFFFFF;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --surface-color: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #EBEBF5;
+                --separator: rgba(84, 84, 88, 0.6);
+                --numpad-bg: #2C2C2E;
+                --numpad-btn: #3A3A3C;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Empêche la sélection de texte sur iOS */
+            -webkit-tap-highlight-color: transparent; /* Enlève le surlignage au tap */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden;
+            /* Gestion du Notch iPhone X et ultérieurs */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            position: absolute;
+            top: env(safe-area-inset-top);
+            bottom: env(safe-area-inset-bottom);
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- COMPONENTS --- */
+        .header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .glass-panel {
+            background: rgba(var(--surface-color), 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            margin: 10px 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            flex: 1;
+            min-height: 200px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        /* Menu Grid */
+        .modes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .btn {
+            background-color: var(--surface-color);
+            color: var(--apple-blue);
+            border: none;
+            border-radius: 14px;
+            padding: 20px 10px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+
+        .btn.primary {
+            background-color: var(--apple-blue);
+            color: white;
+            grid-column: span 2;
+        }
+
+        /* Game Interface */
+        .game-topbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .time-left { color: var(--apple-red); }
+        
+        .problem-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .equation {
+            font-size: 64px;
+            font-weight: 700;
+            letter-spacing: -2px;
+        }
+
+        .answer-input {
+            font-size: 50px;
+            color: var(--apple-blue);
+            min-height: 60px;
+            margin-top: 10px;
+        }
+
+        /* Custom Numpad (iOS Calculator Style) */
+        .numpad {
+            background-color: var(--numpad-bg);
+            padding: 15px;
+            padding-bottom: max(15px, env(safe-area-inset-bottom));
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .num-key {
+            background-color: var(--numpad-btn);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: 500;
+            padding: 15px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .num-key:active {
+            background-color: var(--text-secondary);
+        }
+
+        .num-key.action {
+            background-color: #D1D1D6;
+            color: black;
+        }
+        @media (prefers-color-scheme: dark) {
+            .num-key.action {
+                background-color: #5C5C5F;
+                color: white;
+            }
+        }
+
+        /* Result Screen */
+        .result-stats {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .result-score {
+            font-size: 80px;
+            font-weight: 800;
+            color: var(--apple-green);
+        }
+        .result-details {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .btn-back {
+            margin: 40px 20px;
+            background-color: var(--apple-blue);
+            color: white;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            display: block;
+            border: none;
+            width: calc(100% - 40px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="homeScreen" class="screen">
+        <div class="header">
+            <h1>MindMath</h1>
+            <p style="color: var(--text-secondary);">60 secondes chrono</p>
+        </div>
+
+        <div class="chart-container glass-panel">
+            <canvas id="progressChart"></canvas>
+        </div>
+
+        <div class="modes-grid">
+            <button class="btn" onclick="startGame('Addition')">Addition (+)</button>
+            <button class="btn" onclick="startGame('Soustraction')">Soustraction (-)</button>
+            <button class="btn" onclick="startGame('Multiplication')">Multiplication (×)</button>
+            <button class="btn" onclick="startGame('Division')">Division (÷)</button>
+            <button class="btn primary" onclick="startGame('Mixte')">Mode Mixte (Tous)</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="screen hidden">
+        <div class="game-topbar">
+            <div id="timerDisplay" class="time-left">60s</div>
+            <div id="scoreDisplay">Score: 0</div>
+        </div>
+
+        <div class="problem-area">
+            <div id="equationDisplay" class="equation">...</div>
+            <div id="answerDisplay" class="answer-input"></div>
+        </div>
+
+        <div class="numpad">
+            <button class="num-key" onclick="inputDigit(1)">1</button>
+            <button class="num-key" onclick="inputDigit(2)">2</button>
+            <button class="num-key" onclick="inputDigit(3)">3</button>
+            <button class="num-key" onclick="inputDigit(4)">4</button>
+            <button class="num-key" onclick="inputDigit(5)">5</button>
+            <button class="num-key" onclick="inputDigit(6)">6</button>
+            <button class="num-key" onclick="inputDigit(7)">7</button>
+            <button class="num-key" onclick="inputDigit(8)">8</button>
+            <button class="num-key" onclick="inputDigit(9)">9</button>
+            <button class="num-key action" onclick="clearInput()">C</button>
+            <button class="num-key" onclick="inputDigit(0)">0</button>
+            <button class="num-key action" onclick="deleteDigit()">⌫</button>
+        </div>
+    </div>
+
+    <div id="resultScreen" class="screen hidden">
+        <div class="header">
+            <h1>Terminé !</h1>
+        </div>
+        
+        <div class="result-stats glass-panel">
+            <div id="finalScore" class="result-score">0</div>
+            <div id="finalDetails" class="result-details">0 / 0 correct (0%)</div>
+        </div>
+
+        <button class="btn-back" onclick="showHome()">Retour à l'accueil</button>
+    </div>
+
+    <script>
+        /* --- STATE MANAGEMENT --- */
+        let currentMode = '';
+        let score = 0;
+        let totalQuestions = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let currentAnswer = null;
+        let currentInputStr = "";
+        let chartInstance = null;
+
+        // Éléments DOM
+        const homeScreen = document.getElementById('homeScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const resultScreen = document.getElementById('resultScreen');
+        
+        const equationDisplay = document.getElementById('equationDisplay');
+        const answerDisplay = document.getElementById('answerDisplay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        /* --- INITIALIZATION --- */
+        window.onload = () => {
+            renderChart();
+        };
+
+        /* --- NAVIGATION --- */
+        function showScreen(screen) {
+            homeScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            screen.classList.remove('hidden');
+        }
+
+        function showHome() {
+            renderChart();
+            showScreen(homeScreen);
+        }
+
+        /* --- GAME ENGINE --- */
+        function startGame(mode) {
+            currentMode = mode;
+            score = 0;
+            totalQuestions = 0;
+            timeLeft = 60;
+            currentInputStr = "";
+            
+            updateTopBar();
+            answerDisplay.innerText = "";
+            showScreen(gameScreen);
+            
+            generateProblem();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTopBar();
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function updateTopBar() {
+            timerDisplay.innerText = `${timeLeft}s`;
+            scoreDisplay.innerText = `Score: ${score}`;
+        }
+
+        function generateProblem() {
+            let num1, num2, operator, symbol;
+            let activeMode = currentMode === 'Mixte' 
+                ? ['Addition', 'Soustraction', 'Multiplication', 'Division'][Math.floor(Math.random() * 4)] 
+                : currentMode;
+
+            switch (activeMode) {
+                case 'Addition':
+                    num1 = Math.floor(Math.random() * 50) + 1;
+                    num2 = Math.floor(Math.random() * 50) + 1;
+                    symbol = '+';
+                    currentAnswer = num1 + num2;
+                    break;
+                case 'Soustraction':
+                    num1 = Math.floor(Math.random() * 50) + 10;
+                    num2 = Math.floor(Math.random() * num1); // Assure un résultat positif
+                    symbol = '-';
+                    currentAnswer = num1 - num2;
+                    break;
+                case 'Multiplication':
+                    num1 = Math.floor(Math.random() * 11) + 2; // 2 à 12
+                    num2 = Math.floor(Math.random() * 11) + 2;
+                    symbol = '×';
+                    currentAnswer = num1 * num2;
+                    break;
+                case 'Division':
+                    num2 = Math.floor(Math.random() * 11) + 2; // Diviseur (2 à 12)
+                    currentAnswer = Math.floor(Math.random() * 11) + 2; // Quotient (2 à 12)
+                    num1 = num2 * currentAnswer; // Dividende
+                    symbol = '÷';
+                    break;
+            }
+
+            equationDisplay.innerText = `${num1} ${symbol} ${num2} =`;
+            currentInputStr = "";
+            answerDisplay.innerText = "";
+        }
+
+        /* --- NUMPAD LOGIC --- */
+        function inputDigit(digit) {
+            if (currentInputStr.length < 5) {
+                currentInputStr += digit.toString();
+                answerDisplay.innerText = currentInputStr;
+                checkAnswer();
+            }
+        }
+
+        function clearInput() {
+            currentInputStr = "";
+            answerDisplay.innerText = "";
+        }
+
+        function deleteDigit() {
+            currentInputStr = currentInputStr.slice(0, -1);
+            answerDisplay.innerText = currentInputStr;
+        }
+
+        function checkAnswer() {
+            if (parseInt(currentInputStr) === currentAnswer) {
+                score++;
+                totalQuestions++;
+                scoreDisplay.classList.add('flash-green'); // Effet visuel
+                setTimeout(() => scoreDisplay.classList.remove('flash-green'), 200);
+                generateProblem();
+            } else if (currentInputStr.length >= currentAnswer.toString().length) {
+                // Si la longueur saisie est égale à la réponse attendue mais incorrecte
+                totalQuestions++;
+                clearInput();
+            }
+        }
+
+        /* --- END GAME & PERSISTENCE --- */
+        function endGame() {
+            clearInterval(timerInterval);
+            
+            // Calcul granularité
+            let accuracy = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+            
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalDetails').innerText = 
+                `${accuracy}% de précision en mode ${currentMode}\n(${score} correctes sur ${totalQuestions})`;
+
+            saveSession(score, accuracy, currentMode);
+            showScreen(resultScreen);
+        }
+
+        function saveSession(score, accuracy, mode) {
+            let history = JSON.parse(localStorage.getItem('mindmath_history')) || [];
+            
+            // On limite à 50 sessions pour ne pas saturer le graph/stockage
+            if(history.length >= 50) history.shift(); 
+            
+            let today = new Date();
+            let dateStr = `${today.getDate()}/${today.getMonth() + 1}`;
+
+            history.push({
+                date: dateStr,
+                score: score,
+                accuracy: accuracy,
+                mode: mode
+            });
+
+            localStorage.setItem('mindmath_history', JSON.stringify(history));
+        }
+
+        /* --- CHART.JS INTEGRATION --- */
+        function renderChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            let history = JSON.parse(localStorage.getItem('mindmath_history')) || [];
+
+            let labels = history.map(h => h.date);
+            let dataScores = history.map(h => h.score);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // iOS Theme adaptation for chart
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDarkMode ? '#EBEBF5' : '#8E8E93';
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Aucune donnée'],
+                    datasets: [{
+                        label: 'Score (Mots/Min)',
+                        data: dataScores.length > 0 ? dataScores : [0],
+                        borderColor: '#007AFF',
+                        backgroundColor: 'rgba(0, 122, 255, 0.2)',
+                        borderWidth: 3,
+                        tension: 0.4, // Courbes douces
+                        fill: true,
+                        pointBackgroundColor: '#FFFFFF',
+                        pointBorderColor: '#007AFF',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let session = history[context.dataIndex];
+                                    if(!session) return '0';
+                                    return `Score: ${session.score} (${session.accuracy}% - ${session.mode})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: textColor, maxTicksLimit: 5 }
+                        },
+                        y: { 
+                            grid: { color: gridColor, borderDash: [5, 5] },
+                            ticks: { color: textColor, stepSize: 5 },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
