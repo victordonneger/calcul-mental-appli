@@ -8,68 +8,64 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MindMath">
     
-    <title>MindMath - Deep Midnight</title>
+    <title>MindMath - Midnight Edition</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* =========================================
-           THÈME : DEEP MIDNIGHT & VARIABLES
+           THÈME : MIDNIGHT AESTHETIC
            ========================================= */
         :root {
-            --bg-base: #050507;
-            --bg-surface: #121216;
-            --cyan-neon: #00E5FF;
-            --cyan-dim: rgba(0, 229, 255, 0.15);
+            --bg-pure: #000000;
+            --surface: #111111;
+            --surface-hover: #1A1A1A;
             --text-main: #FFFFFF;
-            --text-muted: #888890;
-            --error-red: #FF2A55;
-            --btn-bg: #1A1A20;
-            --btn-active: #2A2A35;
+            --text-dim: #A0A0A0;
+            --cyan: #06B6D4;
+            --cyan-dim: rgba(6, 182, 212, 0.15);
+            --red: #EF4444;
         }
 
         /* =========================================
-           RESET & ZERO SCROLL
+           RESET & ZÉRO SCROLL STRICT
            ========================================= */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            user-select: none; /* Empêche la sélection de texte */
+            user-select: none; /* Bloque la sélection textuelle native */
+            touch-action: manipulation; /* Optimise les taps rapides */
         }
 
         html, body {
             width: 100vw;
-            height: 100vh; /* Fallback */
-            height: 100dvh; /* Hauteur dynamique pour mobile (clavier, barres) */
-            background-color: var(--bg-base);
+            height: 100vh;
+            /* height: 100dvh est plus précis sur iOS 15+ pour ignorer l'interface Safari */
+            height: 100dvh; 
+            background-color: var(--bg-pure);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; /* ZÉRO SCROLL STRICT */
-            position: fixed; /* Bloque le "bounce effect" d'iOS */
+            overflow: hidden; /* Zéro scroll garanti */
+            position: fixed; /* Bloque l'effet d'élastique iOS */
         }
 
-        /* =========================================
-           SCREENS (SPA Architecture)
-           ========================================= */
         #app {
             width: 100%;
             height: 100%;
             position: relative;
         }
 
+        /* Les écrans s'étendent sur tout le viewport */
         .screen {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            inset: 0;
             display: flex;
             flex-direction: column;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            /* Gestion des zones sûres iOS globales */
-            padding-top: max(20px, env(safe-area-inset-top));
-            padding-bottom: env(safe-area-inset-bottom);
+            transition: opacity 0.3s ease;
         }
 
         .screen.active {
@@ -78,185 +74,210 @@
         }
 
         /* =========================================
-           ÉCRAN D'ACCUEIL
+           ACCUEIL (HOME SCREEN)
            ========================================= */
-        .home-header {
-            text-align: center;
-            padding: 10px 20px;
-            flex-shrink: 0;
+        #home-screen {
+            /* On descend légèrement le contenu sous l'encoche */
+            padding-top: calc(env(safe-area-inset-top) + 10px);
+            padding-bottom: env(safe-area-inset-bottom);
         }
-        
-        .home-header h1 {
+
+        .header-title {
+            text-align: center;
             font-size: 32px;
             font-weight: 800;
             letter-spacing: 1px;
-            color: var(--cyan-neon);
-            text-shadow: 0 0 10px var(--cyan-dim);
+            color: var(--cyan);
+            margin-bottom: 10px;
+            flex-shrink: 0;
         }
 
-        /* Graphique réduit à ~30% max */
+        /* Graphique limité à 30% max */
         .chart-wrapper {
-            flex: 0 1 30%; /* Ne grandit pas au-delà, rétrécit si besoin, base 30% */
-            min-height: 150px;
-            max-height: 250px;
-            margin: 15px 20px;
-            background: var(--bg-surface);
-            border-radius: 20px;
-            padding: 15px;
+            flex: 0 1 30vh;
+            min-height: 120px;
+            margin: 0 20px 15px 20px;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 10px;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Boutons de menu bien proportionnés */
-        .menu-grid {
+        /* Sélecteur de temps */
+        .time-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 20px 15px 20px;
+            flex-shrink: 0;
+        }
+
+        .time-btn {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .time-btn.active {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Grille des modes */
+        .mode-grid {
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-auto-rows: minmax(70px, 1fr); /* Hauteur harmonisée */
-            gap: 15px;
-            padding: 10px 20px 30px 20px;
-            align-content: center;
+            grid-auto-rows: 1fr;
+            gap: 12px;
+            padding: 0 20px 20px 20px;
         }
 
-        .btn-mode {
-            background: var(--btn-bg);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 18px;
+        .mode-btn {
+            background: var(--surface);
+            border: none;
+            border-radius: 16px;
             color: var(--text-main);
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.1s, background 0.1s;
         }
 
-        .btn-mode:active {
-            transform: scale(0.95);
-            background: var(--btn-active);
-        }
+        .mode-btn:active { background: var(--surface-hover); transform: scale(0.97); }
 
-        .btn-mode.mixed {
+        .mode-btn.mixte {
             grid-column: span 2;
-            background: var(--cyan-dim);
-            color: var(--cyan-neon);
-            border-color: rgba(0, 229, 255, 0.3);
-        }
-
-        /* =========================================
-           ÉCRAN DE JEU
-           ========================================= */
-        .game-topbar {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 30px;
+            background: var(--cyan);
+            color: var(--bg-pure);
             font-size: 20px;
             font-weight: 700;
-            flex-shrink: 0;
-            color: var(--text-muted);
         }
-        
-        .timer { color: var(--cyan-neon); }
-        .timer.warning { color: var(--error-red); }
+        .mode-btn.mixte:active { opacity: 0.8; }
 
-        /* Conteneur de calcul centré verticalement */
-        .equation-container {
+        /* =========================================
+           ÉCRAN DE JEU (GAME SCREEN)
+           ========================================= */
+        #game-screen {
+            padding-top: calc(env(safe-area-inset-top) + 20px);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .status-bar {
+            padding: 0 25px;
+            flex-shrink: 0;
+        }
+
+        .status-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        #ui-timer { color: var(--text-main); }
+        
+        /* Jauge Dynamique */
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: var(--surface);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #ui-progress {
+            height: 100%;
+            width: 100%;
+            background: var(--cyan);
+            transition: width 1s linear, background-color 0.3s;
+        }
+
+        /* Focus : Équation centrale */
+        .focus-zone {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
         }
 
         .equation {
-            font-size: 60px;
+            font-size: 72px;
             font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
+            line-height: 1.1;
         }
 
         .user-input {
-            font-size: 48px;
-            color: var(--cyan-neon);
-            min-height: 60px; /* Évite les sauts de layout */
-            font-weight: 600;
+            font-size: 56px;
+            color: var(--cyan);
+            font-weight: 700;
+            min-height: 70px; /* Évite le saut lors de la frappe */
+            margin-top: 10px;
         }
 
-        /* Clavier ancré en bas avec gestion du Safe Area */
+        /* Clavier ancré */
         .numpad {
-            background: var(--bg-surface);
-            padding: 20px;
-            /* Le padding bottom inclut l'encoche du bas (home indicator) */
-            padding-bottom: max(20px, env(safe-area-inset-bottom));
-            border-top-left-radius: 30px;
-            border-top-right-radius: 30px;
+            padding: 10px 15px max(15px, env(safe-area-inset-bottom));
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            gap: 10px;
             flex-shrink: 0;
         }
 
         .key {
-            background: var(--btn-bg);
+            background: var(--surface);
             border: none;
-            border-radius: 16px;
+            border-radius: 14px;
             color: var(--text-main);
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 500;
-            height: 65px;
+            height: 75px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.1s;
         }
 
-        .key:active { background: var(--btn-active); }
-        .key.action { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-size: 24px;}
-        .key.action:active { background: rgba(255, 255, 255, 0.1); }
+        .key:active { background: var(--surface-hover); }
+        .key.action { background: #1A1A1A; color: var(--text-dim); font-size: 28px;}
 
         /* =========================================
            ÉCRAN DE RÉSULTAT
            ========================================= */
-        .result-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        #result-screen {
+            padding-top: calc(env(safe-area-inset-top) + 20px);
+            padding-bottom: env(safe-area-inset-bottom);
             align-items: center;
-            padding: 40px 20px;
+            justify-content: center;
         }
 
-        .score-circle {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            border: 4px solid var(--cyan-neon);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 30px var(--cyan-dim);
-            margin-bottom: 30px;
-        }
-
-        .score-number { font-size: 64px; font-weight: 800; color: var(--text-main); line-height: 1;}
-        .score-label { font-size: 16px; color: var(--cyan-neon); font-weight: 600;}
-        .accuracy { font-size: 18px; color: var(--text-muted); margin-bottom: 40px; text-align: center; }
-
-        .btn-large {
-            background: var(--cyan-neon);
-            color: var(--bg-base);
-            border: none;
+        .result-title { font-size: 28px; color: var(--text-dim); margin-bottom: 30px; }
+        .score-huge { font-size: 90px; font-weight: 800; color: var(--cyan); line-height: 1; }
+        .score-sub { font-size: 18px; color: var(--text-dim); margin-top: 10px; margin-bottom: 50px; text-align: center;}
+        
+        .btn-home {
+            background: var(--surface);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 18px 40px;
             border-radius: 20px;
-            padding: 20px 40px;
             font-size: 18px;
             font-weight: 700;
-            width: 100%;
+            width: 80%;
             max-width: 300px;
-            margin-bottom: max(20px, env(safe-area-inset-bottom));
         }
-        .btn-large:active { opacity: 0.8; }
+        .btn-home:active { background: var(--cyan-dim); }
 
     </style>
 </head>
@@ -265,230 +286,259 @@
 <div id="app">
     
     <div id="home-screen" class="screen active">
-        <div class="home-header">
-            <h1>MindMath</h1>
-        </div>
+        <h1 class="header-title">MindMath</h1>
+        
         <div class="chart-wrapper">
-            <canvas id="chartProgress"></canvas>
+            <canvas id="historyChart"></canvas>
         </div>
-        <div class="menu-grid">
-            <button class="btn-mode" onclick="startGame('Addition')">Addition</button>
-            <button class="btn-mode" onclick="startGame('Soustraction')">Soustraction</button>
-            <button class="btn-mode" onclick="startGame('Multiplication')">Multiplication</button>
-            <button class="btn-mode" onclick="startGame('Division')">Division</button>
-            <button class="btn-mode mixed" onclick="startGame('Mixte')">Mixte (60s Chrono)</button>
+
+        <div class="time-selector">
+            <button id="btn-time-30" class="time-btn" onclick="selectTime(30)">30s</button>
+            <button id="btn-time-60" class="time-btn active" onclick="selectTime(60)">60s</button>
+            <button id="btn-time-120" class="time-btn" onclick="selectTime(120)">120s</button>
+        </div>
+
+        <div class="mode-grid">
+            <button class="mode-btn" onclick="launchGame('Addition')">Addition</button>
+            <button class="mode-btn" onclick="launchGame('Soustraction')">Soustraction</button>
+            <button class="mode-btn" onclick="launchGame('Multiplication')">Multiplication</button>
+            <button class="mode-btn" onclick="launchGame('Division')">Division</button>
+            <button class="mode-btn mixte" onclick="launchGame('Mixte')">Mixte Défi</button>
         </div>
     </div>
 
     <div id="game-screen" class="screen">
-        <div class="game-topbar">
-            <div id="ui-timer" class="timer">60s</div>
-            <div id="ui-score">Score: 0</div>
+        <div class="status-bar">
+            <div class="status-text">
+                <span id="ui-score">Score: 0</span>
+                <span id="ui-timer">60s</span>
+            </div>
+            <div class="progress-track">
+                <div id="ui-progress"></div>
+            </div>
         </div>
         
-        <div class="equation-container">
-            <div id="ui-equation" class="equation">5 + 7 =</div>
+        <div class="focus-zone">
+            <div id="ui-equation" class="equation">...</div>
             <div id="ui-input" class="user-input"></div>
         </div>
 
         <div class="numpad">
-            <button class="key" onclick="pressKey(1)">1</button>
-            <button class="key" onclick="pressKey(2)">2</button>
-            <button class="key" onclick="pressKey(3)">3</button>
-            <button class="key" onclick="pressKey(4)">4</button>
-            <button class="key" onclick="pressKey(5)">5</button>
-            <button class="key" onclick="pressKey(6)">6</button>
-            <button class="key" onclick="pressKey(7)">7</button>
-            <button class="key" onclick="pressKey(8)">8</button>
-            <button class="key" onclick="pressKey(9)">9</button>
+            <button class="key" onclick="typeKey(1)">1</button>
+            <button class="key" onclick="typeKey(2)">2</button>
+            <button class="key" onclick="typeKey(3)">3</button>
+            <button class="key" onclick="typeKey(4)">4</button>
+            <button class="key" onclick="typeKey(5)">5</button>
+            <button class="key" onclick="typeKey(6)">6</button>
+            <button class="key" onclick="typeKey(7)">7</button>
+            <button class="key" onclick="typeKey(8)">8</button>
+            <button class="key" onclick="typeKey(9)">9</button>
             <button class="key action" onclick="clearInput()">C</button>
-            <button class="key" onclick="pressKey(0)">0</button>
-            <button class="key action" onclick="backspace()">⌫</button>
+            <button class="key" onclick="typeKey(0)">0</button>
+            <button class="key action" onclick="deleteKey()">⌫</button>
         </div>
     </div>
 
     <div id="result-screen" class="screen">
-        <div class="result-content">
-            <h2 style="font-size: 28px; margin-bottom: 40px; color: var(--text-main);">Session Terminée</h2>
-            
-            <div class="score-circle">
-                <div id="ui-final-score" class="score-number">0</div>
-                <div class="score-label">PTS</div>
-            </div>
-            
-            <div id="ui-accuracy" class="accuracy">Précision: 0%<br>Mode: Mixte</div>
-        </div>
-        <div style="padding: 0 30px; width: 100%; display:flex; justify-content:center;">
-            <button class="btn-large" onclick="goHome()">Retour à l'accueil</button>
-        </div>
+        <h2 class="result-title">Temps écoulé !</h2>
+        <div id="ui-final-score" class="score-huge">0</div>
+        <div id="ui-final-stats" class="score-sub">Précision: 0%<br>Mode Mixte (60s)</div>
+        <button class="btn-home" onclick="returnHome()">Retour</button>
     </div>
 
 </div>
 
 <script>
     /* =========================================
-       LOGIQUE D'APPLICATION (SPA)
+       LOGIQUE STATE & SPA
        ========================================= */
-    const screens = {
-        home: document.getElementById('home-screen'),
-        game: document.getElementById('game-screen'),
-        result: document.getElementById('result-screen')
+    const UI = {
+        screens: {
+            home: document.getElementById('home-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        },
+        equation: document.getElementById('ui-equation'),
+        input: document.getElementById('ui-input'),
+        timer: document.getElementById('ui-timer'),
+        score: document.getElementById('ui-score'),
+        progress: document.getElementById('ui-progress'),
+        finalScore: document.getElementById('ui-final-score'),
+        finalStats: document.getElementById('ui-final-stats')
     };
 
-    let state = {
+    let GAME = {
+        selectedDuration: 60,
         mode: '',
         score: 0,
-        totalPlayed: 0,
-        timeLeft: 60,
-        timerId: null,
-        currentAnswer: 0,
+        questionsAnswered: 0,
+        timeLeft: 0,
+        timerInterval: null,
+        expectedAnswer: null,
         currentInput: ''
     };
 
-    let chartInstance = null;
+    let myChart = null;
 
-    // --- NAVIGATION ---
-    function switchScreen(targetName) {
-        Object.values(screens).forEach(s => s.classList.remove('active'));
-        screens[targetName].classList.add('active');
+    /* --- Navigation & Setup --- */
+    function showScreen(name) {
+        Object.values(UI.screens).forEach(s => s.classList.remove('active'));
+        UI.screens[name].classList.add('active');
     }
 
-    function goHome() {
-        initChart();
-        switchScreen('home');
+    function selectTime(seconds) {
+        GAME.selectedDuration = seconds;
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-time-' + seconds).classList.add('active');
     }
 
-    // --- MOTEUR DE JEU ---
-    function startGame(mode) {
-        state.mode = mode;
-        state.score = 0;
-        state.totalPlayed = 0;
-        state.timeLeft = 60;
-        state.currentInput = '';
-        
-        updateTopBar();
-        document.getElementById('ui-input').innerText = '';
-        switchScreen('game');
-        
-        nextQuestion();
-        
-        state.timerId = setInterval(() => {
-            state.timeLeft--;
-            updateTopBar();
-            if (state.timeLeft <= 0) endGame();
-        }, 1000);
+    function returnHome() {
+        renderChart();
+        showScreen('home');
     }
 
-    function updateTopBar() {
-        const timerEl = document.getElementById('ui-timer');
-        timerEl.innerText = `${state.timeLeft}s`;
-        if (state.timeLeft <= 10) timerEl.classList.add('warning');
-        else timerEl.classList.remove('warning');
+    /* --- Moteur de Jeu --- */
+    function launchGame(mode) {
+        GAME.mode = mode;
+        GAME.score = 0;
+        GAME.questionsAnswered = 0;
+        GAME.timeLeft = GAME.selectedDuration;
+        GAME.currentInput = '';
         
-        document.getElementById('ui-score').innerText = `Score: ${state.score}`;
+        UI.progress.style.width = '100%';
+        UI.progress.style.backgroundColor = 'var(--cyan)';
+        
+        refreshTopBar();
+        generateMath();
+        showScreen('game');
+
+        GAME.timerInterval = setInterval(gameTick, 1000);
     }
 
-    function nextQuestion() {
+    function gameTick() {
+        GAME.timeLeft--;
+        refreshTopBar();
+
+        if (GAME.timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    function refreshTopBar() {
+        UI.timer.innerText = `${GAME.timeLeft}s`;
+        UI.score.innerText = `Score: ${GAME.score}`;
+        
+        // Calcul Jauge
+        const percentage = (GAME.timeLeft / GAME.selectedDuration) * 100;
+        UI.progress.style.width = `${percentage}%`;
+        
+        // Virage au rouge sous 25%
+        if (percentage <= 25) {
+            UI.progress.style.backgroundColor = 'var(--red)';
+            UI.timer.style.color = 'var(--red)';
+        } else {
+            UI.timer.style.color = 'var(--text-main)';
+        }
+    }
+
+    function generateMath() {
         let n1, n2, op, ans;
-        let m = state.mode === 'Mixte' ? ['Addition', 'Soustraction', 'Multiplication', 'Division'][Math.floor(Math.random() * 4)] : state.mode;
+        let activeMode = GAME.mode === 'Mixte' 
+            ? ['Addition', 'Soustraction', 'Multiplication', 'Division'][Math.floor(Math.random() * 4)] 
+            : GAME.mode;
 
-        if (m === 'Addition') {
-            n1 = Math.floor(Math.random() * 49) + 2; n2 = Math.floor(Math.random() * 49) + 2;
-            op = '+'; ans = n1 + n2;
-        } else if (m === 'Soustraction') {
-            n1 = Math.floor(Math.random() * 50) + 10; n2 = Math.floor(Math.random() * n1);
-            op = '-'; ans = n1 - n2;
-        } else if (m === 'Multiplication') {
-            n1 = Math.floor(Math.random() * 11) + 2; n2 = Math.floor(Math.random() * 11) + 2;
-            op = '×'; ans = n1 * n2;
-        } else { // Division
-            n2 = Math.floor(Math.random() * 10) + 2; ans = Math.floor(Math.random() * 10) + 2;
-            n1 = n2 * ans; op = '÷';
+        switch(activeMode) {
+            case 'Addition':
+                n1 = Math.floor(Math.random() * 45) + 5; n2 = Math.floor(Math.random() * 45) + 5;
+                op = '+'; ans = n1 + n2; break;
+            case 'Soustraction':
+                n1 = Math.floor(Math.random() * 50) + 20; n2 = Math.floor(Math.random() * (n1 - 5)) + 1;
+                op = '-'; ans = n1 - n2; break;
+            case 'Multiplication':
+                n1 = Math.floor(Math.random() * 11) + 2; n2 = Math.floor(Math.random() * 11) + 2;
+                op = '×'; ans = n1 * n2; break;
+            case 'Division':
+                n2 = Math.floor(Math.random() * 10) + 2; ans = Math.floor(Math.random() * 10) + 2;
+                n1 = n2 * ans; op = '÷'; break;
         }
 
-        state.currentAnswer = ans;
-        state.currentInput = '';
-        document.getElementById('ui-equation').innerText = `${n1} ${op} ${n2} =`;
-        document.getElementById('ui-input').innerText = '';
+        GAME.expectedAnswer = ans;
+        GAME.currentInput = '';
+        UI.equation.innerText = `${n1} ${op} ${n2} =`;
+        UI.input.innerText = '';
     }
 
-    // --- CLAVIER & ENTRÉES ---
-    function pressKey(num) {
-        if (state.currentInput.length < 5) {
-            state.currentInput += num;
-            updateInputDisplay();
-            checkAnswer();
+    /* --- Clavier Numérique --- */
+    function typeKey(num) {
+        if (GAME.currentInput.length < 5) {
+            GAME.currentInput += num;
+            UI.input.innerText = GAME.currentInput;
+            verifyAnswer();
         }
     }
 
-    function backspace() {
-        state.currentInput = state.currentInput.slice(0, -1);
-        updateInputDisplay();
+    function deleteKey() {
+        GAME.currentInput = GAME.currentInput.slice(0, -1);
+        UI.input.innerText = GAME.currentInput;
     }
 
     function clearInput() {
-        state.currentInput = '';
-        updateInputDisplay();
+        GAME.currentInput = '';
+        UI.input.innerText = '';
     }
 
-    function updateInputDisplay() {
-        document.getElementById('ui-input').innerText = state.currentInput;
-    }
-
-    function checkAnswer() {
-        let userAns = parseInt(state.currentInput);
-        if (userAns === state.currentAnswer) {
-            state.score++;
-            state.totalPlayed++;
-            nextQuestion();
-            updateTopBar();
-        } else if (state.currentInput.length >= String(state.currentAnswer).length) {
-            // Longueur atteinte mais faux
-            state.totalPlayed++;
+    function verifyAnswer() {
+        const inputVal = parseInt(GAME.currentInput);
+        if (inputVal === GAME.expectedAnswer) {
+            GAME.score++;
+            GAME.questionsAnswered++;
+            refreshTopBar();
+            generateMath();
+        } else if (GAME.currentInput.length >= String(GAME.expectedAnswer).length) {
+            GAME.questionsAnswered++;
             clearInput();
         }
     }
 
-    // --- FIN & PERSISTANCE ---
+    /* --- Fin de Session & Stats --- */
     function endGame() {
-        clearInterval(state.timerId);
+        clearInterval(GAME.timerInterval);
         
-        let ratio = state.totalPlayed === 0 ? 0 : Math.round((state.score / state.totalPlayed) * 100);
-        document.getElementById('ui-final-score').innerText = state.score;
-        document.getElementById('ui-accuracy').innerHTML = `Précision: ${ratio}%<br>Mode: ${state.mode}`;
+        const accuracy = GAME.questionsAnswered === 0 ? 0 : Math.round((GAME.score / GAME.questionsAnswered) * 100);
+        UI.finalScore.innerText = GAME.score;
+        UI.finalStats.innerHTML = `Précision: ${accuracy}%<br>Mode ${GAME.mode} (${GAME.selectedDuration}s)`;
         
-        saveData(state.score);
-        switchScreen('result');
+        saveScore(GAME.score);
+        showScreen('result');
     }
 
-    function saveData(score) {
-        let history = JSON.parse(localStorage.getItem('mindmath_data')) || [];
-        if (history.length >= 30) history.shift(); // Garde les 30 derniers
+    function saveScore(score) {
+        let history = JSON.parse(localStorage.getItem('mindmath_scores')) || [];
+        if (history.length >= 20) history.shift();
         history.push(score);
-        localStorage.setItem('mindmath_data', JSON.stringify(history));
+        localStorage.setItem('mindmath_scores', JSON.stringify(history));
     }
 
-    // --- GRAPHIQUE ---
-    function initChart() {
-        const ctx = document.getElementById('chartProgress').getContext('2d');
-        let history = JSON.parse(localStorage.getItem('mindmath_data')) || [];
-        
-        let labels = history.length ? history.map((_, i) => `#${i+1}`) : [''];
-        let data = history.length ? history : [0];
+    /* --- Graphique (Chart.js) --- */
+    function renderChart() {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        let data = JSON.parse(localStorage.getItem('mindmath_scores')) || [];
+        let labels = data.length ? data.map((_, i) => i + 1) : [''];
+        let chartData = data.length ? data : [0];
 
-        if (chartInstance) chartInstance.destroy();
+        if (myChart) myChart.destroy();
 
-        chartInstance = new Chart(ctx, {
+        myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    data: data,
-                    borderColor: '#00E5FF',
-                    backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                    data: chartData,
+                    borderColor: '#06B6D4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.4,
+                    tension: 0.3,
                     pointRadius: 0
                 }]
             },
@@ -502,16 +552,16 @@
                         display: true, 
                         border: { display: false },
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#888890', maxTicksLimit: 4, padding: 10 }
+                        ticks: { color: '#A0A0A0', maxTicksLimit: 5, padding: 5 }
                     }
                 },
-                layout: { padding: 0 }
+                layout: { padding: 5 }
             }
         });
     }
 
-    // Init au lancement
-    window.onload = initChart;
+    // Initialisation
+    window.onload = renderChart;
 
 </script>
 </body>
